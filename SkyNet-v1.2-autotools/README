@@ -1,0 +1,144 @@
+************************************************************************************
+SkyNet v1.2
+Copyright Philip Graff, Farhan Ferox, Michael P. Hobson
+Release May 2014
+************************************************************************************
+
+Installation:
+
+SkyNet requires the CBLAS library. This is typically installed as part of BLAS, LAPACK, or ATLAS libraries.
+See http://www.netlib.org/blas/ for source if needed.
+
+First set the directory where you would like to install SkyNet:  PREFIX=/your/install/directory
+
+Then run:
+1) ./configure --prefix=${PREFIX} (--enable-mpi)
+2) make
+3) make install
+
+You should then add ${PREFIX}/bin to your PATH and ${PREFIX}/lib/pkgconfig to your PKG_CONFIG_PATH.
+
+"--enable-mpi" is optional and only if you would like the MPI version of SkyNet.
+
+************************************************************************************
+
+Data:
+
+You need to provide 2 sets of data:
+(i) Training data to be given in <input_root>train.txt
+(ii) Test data to be given in <input_root>test.txt
+
+Data files should have comma separated entries. First line should have nin (no. of inputs), second nout (no. of outputs). For classification problems, nout should be the number of classes. If there are more than one categories (e.g. colour and gender) to be predicted then second line should be nout1, nout2, ... where nout1 is the no. of classes incategory 1 & so on.
+
+After the first two lines, rest of the file consists of data entries with inputs for a given entry on one line & outputs on the line below the inputs. The output for classification problems consists of an integer value specifying the correct class with 0 meaning the first class.
+
+See data/sinc* and data/cdata* for examples of data for regression and classiciation networks respectively.
+
+************************************************************************************
+
+Input File:
+
+See inputs/sinc.inp & inputs/cdata.inp for example input files. The entries in input file are described below:
+
+--------------------------------------------------------------------------
+    Data-Handling options
+--------------------------------------------------------------------------
+input_root                  root of the data files
+classification_network      0=regression, 1=classification
+mini-batch_fraction         what fraction of training data to be used?
+validation_data             is there validation data to test against?
+whitenin                    input whitening transform to use
+whitenout                   output whitening transform to use
+
+--------------------------------------------------------------------------
+    Network and Training options
+--------------------------------------------------------------------------
+nhid                        no. of nodes in the hidden layer. For multiple hidden layers,
+                            define nhid multiple times with the no. of nodes required in
+                            each hidden layer in order.
+activation                  manually set activation function of layer connections
+                            options are: 0=linear, 1=sigmoid, 2=tanh,
+                                         3=rectified linear, 4=softsign
+                            default is 1 for all hidden and 0 for output
+			    e.g. for a network with 3 layers (input, hidden & output), 10 would
+			    set sigmoid & linear activation for hidden & output layers respectively
+prior                       use prior/regularization
+noise_scaling               if noise level (standard deviation of outputs) is to be estimated
+set_whitened_noise          whether the noise is to be set on whitened data
+sigma                       initial noise level, set on (un-)whitened data
+confidence_rate             step size factor, higher values are more aggressive. default=0.1
+confidence_rate_minimum     minimum confidence rate allowed
+max_iter                    max no. of iterations allowed
+startstdev                  the standard deviation of the initial random weights
+convergence_function        function to use for convergence testing, default is 4=error squared
+                            1=log-posterior, 2=log-likelihood, 3=correlation
+historic_maxent             experimental implementation of MemSys's historic maxent option
+resume                      resume from a previous job
+reset_alpha                 reset hyperparameter upon resume
+reset_sigma                 reset hyperparameters upon resume
+randomise_weights           random factor to add to saved weights upon resume
+line_search					perform line search for optimal distance
+                            0 = none (default), 1 = golden section, 2 = linbcg lnsrch
+
+--------------------------------------------------------------------------
+    Output options
+--------------------------------------------------------------------------
+output_root                 root where the resultant network will be written to
+verbose                     verbosity level of feedback sent to stdout (0=min, 3=max)
+iteration_print_frequency   stdout feedback frequency
+calculate_evidence          whether to calculate the evidence at the convergence
+
+--------------------------------------------------------------------------
+    Autoencoder options
+--------------------------------------------------------------------------
+pretrain                    perform pre-training?
+nepoch                      number of epochs to use in pre-training (default=10)
+autoencoder                 make autoencoder network
+
+--------------------------------------------------------------------------
+    RNN options
+--------------------------------------------------------------------------
+recurrent                   use a RNN
+norbias                     use a bias for the recurrent hidden layer connections
+
+--------------------------------------------------------------------------
+    Debug options
+--------------------------------------------------------------------------
+fix_seed                    use a fixed seed?
+fixed_seed                  seed to use
+
+************************************************************************************
+
+Running:
+
+In setial modes:
+SkyNet <input file>
+e.g.
+SkyNet inputs/sinc.inp
+
+In parallel mode
+
+mpirun -np n SkyNet <input file>
+e.g.
+mpirun -np n SkyNet inputs/sinc.inp
+
+************************************************************************************
+
+RNN:
+
+Recurrent Neural Network has data at various time steps. Data consists of nin input & nout outputs. The data for RNN should still have nin followed by nout on the first line but the data entries should have inputs for all timesteps for a given data entry on one line followed by outputs for all timesteps for a given data entry.
+
+************************************************************************************
+
+Change Log:
+
+v1.2:
+  * Added version print option
+  * Added more activation functions (tanh, rectified linear units, softmax, and softplus). They are selected
+    with the "#activation" option. "#linear_layers" is now removed as an option.
+  * Line search has been added to find the optimal distance to search in the found direction. The default distance is 1.
+    Turn this on with "#line_search" option to use either the golden section search or linbcg search.
+v1.1:
+  * Fixed autotools build system so that CalPred and Codec aren't built with MPI when MPI is enabled.
+  * CalPred and Codec now #include the other source files they rely on instead of linking
+  * Added a help print option
